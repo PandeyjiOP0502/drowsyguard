@@ -1,0 +1,22 @@
+{
+  "name": "drowsyguard",
+  "version": "1.0.0",
+  "description": "Real-time browser-based drowsiness detection using MediaPipe Face Mesh",
+  "type": "module",
+  "scripts": {
+    "dev": "http-server -p 8080 -o",
+    "serve": "http-server -p 8080",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@mediapipe/camera_utils": "^0.3.1675466862",
+    "@mediapipe/face_mesh": "^0.4.1657299874"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0"
+  }
+}

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="Real-time AI-powered drowsiness detection using facial landmark analysis. Detects eye closure, yawning, head pose, and gaze patterns to prevent fatigue-related incidents.">
+  <meta name="theme-color" content="#050912">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  
+  <title>DrowsyGuard · AI Drowsiness Detection</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23050912' stroke='%2300d4ff' stroke-width='4'/><circle cx='50' cy='50' r='20' fill='none' stroke='%2300d4ff' stroke-width='3'/></svg>">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- MediaPipe (vendored locally - must load before our modules) -->
+  <script src="./vendor/mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="./vendor/mediapipe/face_mesh/face_mesh.js"       crossorigin="anonymous"></script>
+</head>
+<body>
+
+<!-- Skip link for accessibility -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- ── Navigation ─────────────────────────────────────────────────── -->
+<nav role="navigation" aria-label="Main navigation">
+  <div class="logo">
+    <div class="logo-ring">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00d4ff" stroke-width="2">
+        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12z"/>
+        <circle cx="12" cy="12" r="3" fill="rgba(0,212,255,.25)"/>
+      </svg>
+    </div>
+    <div>
+      <div><em>Drowsy</em>Guard</div>
+      <div class="logo-version">v1.0 · VISION AI</div>
+    </div>
+  </div>
+
+  <div class="nav-r">
+    <div class="badge">
+      <div class="dot" id="liveDot"></div>
+      <span id="statusTxt">STANDBY</span>
+    </div>
+    <div class="badge" style="color:var(--txt-dim)">
+      <span id="fpsTxt">— FPS</span>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Main grid ───────────────────────────────────────────────────── -->
+<div class="wrap" id="main-content" role="main">
+
+  <!-- Camera viewport -->
+  <div class="cam-box" id="camBox" role="region" aria-label="Camera viewport">
+    <video id="vid" autoplay playsinline muted aria-label="Live camera feed showing face detection"></video>
+    <canvas id="ov" aria-hidden="true"></canvas>
+
+    <!-- Corner brackets -->
+    <div class="cr cr-tl"></div>
+    <div class="cr cr-tr"></div>
+    <div class="cr cr-bl"></div>
+    <div class="cr cr-br"></div>
+
+    <!-- Scan line -->
+    <div class="scan"></div>
+
+    <!-- Bottom HUD bar -->
+    <div class="hud-bar">
+      <div class="hud-chip" id="camChip">CAM · OFFLINE</div>
+      <div class="hud-chip" id="stateChip">NO FACE DETECTED</div>
+    </div>
+
+    <!-- Start / loading overlay -->
+    <div class="start-ov" id="startOv">
+      <div class="eye-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#00d4ff" stroke-width="1.5">
+          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12z"/>
+          <circle cx="12" cy="12" r="3" fill="rgba(0,212,255,.3)"/>
+        </svg>
+      </div>
+      <div class="so-title">Drowsy<span>Guard</span><br>Detection System</div>
+      <div class="so-sub">
+        Real-time AI drowsiness detection using facial landmark analysis — EAR &amp; MAR metrics
+      </div>
+      <div id="loadMsg"></div>
+      <div class="load-bar-wrap" id="loadBarWrap"><div id="loadBar"></div></div>
+      <button class="btn-activate" id="btnStart" onclick="window.initDrowsyGuard()">
+        <span>▶ &nbsp;ACTIVATE SYSTEM</span>
+      </button>
+    </div>
+  </div><!-- /cam-box -->
+
+  <!-- ── Stats column ──────────────────────────────────────────────── -->
+  <div class="stats">
+
+    <!-- EAR card -->
+    <div class="card">
+      <div class="clabel">Eye Aspect Ratio · EAR</div>
+      <div>
+        <span class="big-val" id="earV">—</span>
+        <span class="unit">/ 1.0</span>
+      </div>
+      <div class="mbar"><div class="mfill" id="earFill" style="width:0%"></div></div>
+      <div class="two-label"><span>CLOSED</span><span>OPEN</span></div>
+    </div>
+
+    <!-- MAR card -->
+    <div class="card">
+      <div class="clabel">Mouth Aspect Ratio · MAR</div>
+      <div>
+        <span class="big-val" id="marV" style="color:var(--green)">—</span>
+        <span class="unit">/ 1.0</span>
+      </div>
+      <div class="mbar">
+        <div class="mfill" id="marFill" style="width:0%;background:var(--green)"></div>
+      </div>
+      <div class="two-label"><span>CLOSED</span><span>YAWNING</span></div>
+    </div>
+
+    <!-- Session stats -->
+    <div class="card">
+      <div class="clabel">Session Statistics</div>
+      <div class="sgrid">
+        <div class="sitem">
+          <div class="snum" id="cntAlert" style="color:var(--alert)">0</div>
+          <div class="slabel">Drowsy Alerts</div>
+        </div>
+        <div class="sitem">
+          <div class="snum" id="cntYawn" style="color:var(--warn)">0</div>
+          <div class="slabel">Yawns</div>
+        </div>
+        <div class="sitem">
+          <div class="snum" id="cntTime" style="color:var(--cyan)">0:00</div>
+          <div class="slabel">Session Time</div>
+        </div>
+        <div class="sitem">
+          <div class="snum" id="riskLevel" style="color:var(--green)">LOW</div>
+          <div class="slabel">Risk Level</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Enhanced metrics card -->
+    <div class="card">
+      <div class="clabel">Enhanced Metrics</div>
+      <div class="sgrid">
+        <div class="sitem">
+          <div class="snum" id="cntBlink" style="color:var(--cyan)">0</div>
+          <div class="slabel">Blink Rate/min</div>
+        </div>
+        <div class="sitem">
+          <div class="snum" id="cntPerclos" style="color:var(--green)">0%</div>
+          <div class="slabel">PERCLOS</div>
+        </div>
+        <div class="sitem">
+          <div class="snum" id="cntGaze" style="color:var(--txt-dim)">0</div>
+          <div class="slabel">Gaze Away</div>
+        </div>
+        <div class="sitem">
+          <div class="snum" id="cntHeadPose" style="color:var(--green)">OK</div>
+          <div class="slabel">Head Pose</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sensitivity sliders -->
+    <div class="card">
+      <div class="clabel">Sensitivity Controls</div>
+      <div class="slider-group" style="margin-top:.35rem" role="group" aria-label="Detection sensitivity settings">
+
+        <div class="sld-row">
+          <label class="sld-lbl" for="sEAR">EAR Threshold (eye-close)</label>
+          <input type="range" id="sEAR" min="0.15" max="0.35" step="0.01" value="0.25" aria-label="EAR threshold: lower values detect closed eyes sooner" aria-valuemin="0.15" aria-valuemax="0.35" aria-valuenow="0.25">
+          <div class="sld-val" id="vEAR" aria-live="polite">0.25</div>
+        </div>
+
+        <div class="sld-row">
+          <label class="sld-lbl" for="sMAR">MAR Threshold (yawn)</label>
+          <input type="range" id="sMAR" min="0.35" max="0.80" step="0.01" value="0.55" aria-label="MAR threshold: lower values detect yawning sooner" aria-valuemin="0.35" aria-valuemax="0.80" aria-valuenow="0.55">
+          <div class="sld-val" id="vMAR" aria-live="polite">0.55</div>
+        </div>
+
+        <div class="sld-row">
+          <label class="sld-lbl" for="sDEL">Alert Delay (frames)</label>
+          <input type="range" id="sDEL" min="10" max="60" step="5" value="25" aria-label="Alert delay: higher values require more consecutive frames before alerting" aria-valuemin="10" aria-valuemax="60" aria-valuenow="25">
+          <div class="sld-val" id="vDEL" aria-live="polite">25</div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /stats -->
+
+  <!-- Event log -->
+  <div class="log-wrap">
+    <div class="log-hdr">
+      <span>⬡ EVENT LOG</span>
+      <span id="logCnt">0 events</span>
+    </div>
+    <div class="log-body" id="logBody">
+      <div class="lg info">
+        <span class="lt">00:00</span>
+        <span>System ready — click ACTIVATE SYSTEM to begin</span>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+
+<!-- ── Drowsy alert overlay ──────────────────────────────────────────── -->
+<div id="alertOv">
+  <div class="alert-inner">
+    <div class="alert-big" id="alertBig">⚠ DROWSY!</div>
+    <div class="alert-sub" id="alertSub">WAKE UP — STAY ALERT</div>
+    <button class="btn-dismiss" id="btnDismiss">◼ DISMISS</button>
+  </div>
+</div>
+
+<!-- ── App module ────────────────────────────────────────────────────── -->
+<script type="module" src="js/app.js"></script>
+
+<!-- Service Worker registration for offline support -->
+<script>
+  if ('serviceWorker' in navigator) {
+    const isLocalHost =
+      location.hostname === 'localhost' ||
+      location.hostname === '127.0.0.1' ||
+      location.hostname === '::1';
+
+    if (isLocalHost) {
+      navigator.serviceWorker.getRegistrations()
+        .then((regs) => Promise.all(regs.map((r) => r.unregister())))
+        .then(() => console.log('[App] Service Worker disabled for localhost debugging'))
+        .catch(err => console.warn('[App] Service Worker unregister failed:', err));
+    } else {
+      navigator.serviceWorker.register('./service-worker.js', { updateViaCache: 'none' })
+        .then((reg) => {
+          reg.update();
+          console.log('[App] Service Worker registered:', reg);
+        })
+        .catch(err => console.warn('[App] Service Worker registration failed:', err));
+    }
+  }
+</script>
+
+</body>
+</html>
