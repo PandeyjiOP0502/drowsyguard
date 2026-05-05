@@ -83,44 +83,42 @@ describe('Math Helpers', () => {
 });
 
 describe('Eye Aspect Ratio', () => {
-  // Mock landmarks for eye (simplified)
-  const mockEyeIndices = [0, 1, 2, 3, 4, 5];
-  
-  const openEyeLandmarks = [
-    { x: 0.1, y: 0.2 }, // p1 left
-    { x: 0.15, y: 0.18 }, // p2 top
-    { x: 0.15, y: 0.22 }, // p3 bottom
-    { x: 0.2, y: 0.2 }, // p4 right
-    { x: 0.17, y: 0.19 }, // p5
-    { x: 0.17, y: 0.21 } // p6
-  ];
-
+  // LEFT_EYE: [33, 160, 158, 133, 153, 144], RIGHT_EYE: [362, 385, 387, 263, 373, 380]
   it('calculates higher EAR for open eye', () => {
-    const ear = eyeAspectRatio(openEyeLandmarks, mockEyeIndices);
+    const landmarks = Array(500).fill(null).map(() => ({ x: 0.5, y: 0.5, z: 0 }));
+    // Left eye - wide open
+    landmarks[33] = { x: 0.35, y: 0.45, z: 0 };  // p1 left
+    landmarks[160] = { x: 0.38, y: 0.43, z: 0 }; // p2 top
+    landmarks[158] = { x: 0.38, y: 0.47, z: 0 }; // p3 bottom
+    landmarks[133] = { x: 0.42, y: 0.45, z: 0 }; // p4 right
+    landmarks[153] = { x: 0.40, y: 0.44, z: 0 }; // p5
+    landmarks[144] = { x: 0.40, y: 0.46, z: 0 }; // p6
+    
+    const ear = eyeAspectRatio(landmarks, [33, 160, 158, 133, 153, 144]);
     expect(ear).toBeGreaterThan(0.2);
   });
 });
 
 describe('Mouth Aspect Ratio', () => {
   it('calculates MAR for closed mouth', () => {
-    const closedMouth = [
-      { x: 0.3, y: 0.5 }, // left
-      { x: 0.7, y: 0.5 }, // right
-      { x: 0.5, y: 0.48 }, // top
-      { x: 0.5, y: 0.52 } // bottom
-    ];
-    const mar = mouthAspectRatio(closedMouth);
+    // Create full landmark array with correct indices for MOUTH_CORNERS [61, 291, 0, 17]
+    const landmarks = Array(500).fill(null).map(() => ({ x: 0.5, y: 0.5, z: 0 }));
+    // left=61, right=291, top=0, bottom=17
+    landmarks[61] = { x: 0.3, y: 0.5, z: 0 };   // left corner
+    landmarks[291] = { x: 0.7, y: 0.5, z: 0 }; // right corner
+    landmarks[0] = { x: 0.5, y: 0.48, z: 0 };  // top
+    landmarks[17] = { x: 0.5, y: 0.52, z: 0 }; // bottom
+    const mar = mouthAspectRatio(landmarks);
     expect(mar).toBeLessThan(0.2);
   });
 
   it('calculates higher MAR for open mouth', () => {
-    const openMouth = [
-      { x: 0.3, y: 0.5 },
-      { x: 0.7, y: 0.5 },
-      { x: 0.5, y: 0.45 },
-      { x: 0.5, y: 0.65 }
-    ];
-    const mar = mouthAspectRatio(openMouth);
+    const landmarks = Array(500).fill(null).map(() => ({ x: 0.5, y: 0.5, z: 0 }));
+    landmarks[61] = { x: 0.3, y: 0.5, z: 0 };   // left
+    landmarks[291] = { x: 0.7, y: 0.5, z: 0 }; // right
+    landmarks[0] = { x: 0.5, y: 0.45, z: 0 };  // top (more open)
+    landmarks[17] = { x: 0.5, y: 0.65, z: 0 }; // bottom (more open)
+    const mar = mouthAspectRatio(landmarks);
     expect(mar).toBeGreaterThan(0.3);
   });
 });

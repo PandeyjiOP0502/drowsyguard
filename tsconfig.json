@@ -4,20 +4,17 @@
     "module": "ESNext",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "moduleResolution": "bundler",
-    "strict": true,
-    "noEmit": false,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "outDir": "./dist",
-    "rootDir": "./js",
+    "strict": false,
+    "noEmit": true,
+    "checkJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "maxNodeModuleJsDepth": 2
   },
-  "include": ["js/**/*.js"],
+  "include": ["js/**/*.js", "js/**/*.ts"],
   "exclude": ["node_modules", "dist", "vendor"]
 }

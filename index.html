@@ -7,24 +7,39 @@
   <meta name="theme-color" content="#050912">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="DrowsyGuard">
   
   <title>DrowsyGuard · AI Drowsiness Detection</title>
 
-  <!-- Fonts -->
+  <!-- Performance: Preconnect to external resources -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet">
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+  
+  <!-- Fonts - swap for faster initial render -->
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;700&display=swap" rel="stylesheet"></noscript>
 
   <!-- PWA Manifest -->
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23050912' stroke='%2300d4ff' stroke-width='4'/><circle cx='50' cy='50' r='20' fill='none' stroke='%2300d4ff' stroke-width='3'/></svg>">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><circle cx='90' cy='90' r='80' fill='%23050912' stroke='%2300d4ff' stroke-width='8'/><circle cx='90' cy='90' r='35' fill='none' stroke='%2300d4ff' stroke-width='6'/><circle cx='90' cy='90' r='15' fill='%2300d4ff'/></svg>">
+
+  <!-- Critical CSS inline for faster FCP -->
+  <style>
+    :root{--bg:#050912;--bg2:#080f1e;--cyan:#00d4ff;--green:#39ff14}
+    body{background:var(--bg);color:#c8ddff;font-family:'Rajdhani',sans-serif;margin:0;min-height:100vh}
+    .skip-link{position:absolute;top:-100px;left:50%;transform:translateX(-50%);background:var(--cyan);color:var(--bg);padding:10px 20px;border-radius:0 0 8px 8px;font-weight:700;text-transform:uppercase;z-index:9999;transition:top .3s}
+    .skip-link:focus{top:0}
+  </style>
 
   <!-- Styles -->
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="styles.css"></noscript>
 
-  <!-- MediaPipe (vendored locally - must load before our modules) -->
-  <script src="./vendor/mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-  <script src="./vendor/mediapipe/face_mesh/face_mesh.js"       crossorigin="anonymous"></script>
+  <!-- MediaPipe - defer for faster initial load -->
+  <script src="./vendor/mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous" defer></script>
+  <script src="./vendor/mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous" defer></script>
 </head>
 <body>
 

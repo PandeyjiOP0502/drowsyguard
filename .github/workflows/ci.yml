@@ -25,12 +25,10 @@ jobs:
         run: npm ci
       
       - name: Run TypeScript type check
-        run: npm run typecheck || true
-        continue-on-error: true
+        run: npm run typecheck
       
       - name: Run tests
-        run: npm test || true
-        continue-on-error: true
+        run: npm test
 
   deploy:
     name: Deploy to Vercel
