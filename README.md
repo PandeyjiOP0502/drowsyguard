@@ -1,11 +1,22 @@
 # DrowsyGuard
 
-Real-time browser-based drowsiness detection using **MediaPipe Face Mesh** and facial landmark metrics:
+Real-time browser-based drowsiness detection using **MediaPipe Face Mesh** and facial landmark analysis.
 
-- **EAR (Eye Aspect Ratio)** to detect prolonged eye closure
-- **MAR (Mouth Aspect Ratio)** to detect yawning
+## Features
+
+- **EAR (Eye Aspect Ratio)** - Detects prolonged eye closure
+- **MAR (Mouth Aspect Ratio)** - Detects yawning
+- **Head Pose Estimation** - Detects looking away, head tilt
+- **Blink Rate Tracking** - Monitors blinks per minute
+- **PERCLOS** - Percentage of time eyes closed
+- **Gaze Away Detection** - Alerts when looking away from road
 - Live HUD with alerts, event log, risk level, and sensitivity sliders
-- **Offline Support** — runs locally with vendored MediaPipe assets
+- **PWA Support** - Installable as native app
+- **Offline Support** - Runs locally with vendored MediaPipe assets
+
+## Live Demo
+
+🚀 **Production**: [https://drowsyguard.vercel.app](https://drowsyguard.vercel.app)
 
 ## Project Structure
 
@@ -99,6 +110,32 @@ Then open `http://localhost:8080` in your browser.
 - Tune detection behavior with EAR/MAR/Delay sliders in the UI
 - Alert audio uses `fahhhhh.mp3` from the project root
 - Tested with Chrome, Firefox, Edge (all support Service Worker)
+
+## Deployment
+
+### Vercel Deployment
+
+1. **Push to GitHub**:
+   ```bash
+   git add .
+   git commit -m "feat: DrowsyGuard v2.0"
+   git push origin master
+   ```
+
+2. **Connect to Vercel**:
+   - Go to [vercel.com](https://vercel.com)
+   - Click "Add New Project"
+   - Import your GitHub repository `PandeyjiOP0502/drowsyguard`
+   - Click "Deploy"
+
+3. **Your live URL**: `https://drowsyguard.vercel.app`
+
+### GitHub Actions CI/CD
+
+The project includes automatic deployment on push to `main` branch:
+- Runs TypeScript type check
+- Runs Vitest unit tests
+- Deploys to Vercel on success
 
 ## Troubleshooting Camera API on Localhost
 
