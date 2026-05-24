@@ -141,11 +141,11 @@ function onResults(results) {
 }
 
 // ── Neural Engine and FaceMesh initialization/recovery ────────────────────────
-function reinitFaceMesh() {
+async function reinitFaceMesh() {
   log('Initializing Neural Engine...', 'info');
   try {
     if (faceMesh && typeof faceMesh.close === 'function') {
-      faceMesh.close().catch(() => {});
+      await faceMesh.close().catch(() => {});
     }
   } catch (e) {
     console.warn('[DrowsyGuard] Failed to close old FaceMesh instance:', e);
@@ -154,6 +154,9 @@ function reinitFaceMesh() {
   faceMesh = new FaceMesh({ locateFile: MEDIAPIPE.LOCATE_FILE });
   faceMesh.setOptions(MEDIAPIPE.OPTIONS);
   faceMesh.onResults(onResults);
+
+  // Explicitly initialize WASM and load model files before resolving
+  await faceMesh.initialize();
 }
 
 async function handleFaceMeshError(err) {
@@ -167,7 +170,7 @@ async function handleFaceMeshError(err) {
   if (errMsg.includes('abort') || errMsg.includes('Aborted')) {
     log('WebAssembly runtime crashed — self-healing reboot triggered', 'alert');
     try {
-      reinitFaceMesh();
+      await reinitFaceMesh();
       log('Neural Engine rebooted successfully', 'ok');
       sendErrShown = false; // Reset error state for the fresh instance
     } catch (rebootErr) {
@@ -184,7 +187,7 @@ function startFallbackTrackingLoop() {
 
   const tick = async () => {
     if (!busy && faceMesh && !vid.paused && !vid.ended &&
-        vid.readyState >= 2 && vid.videoWidth > 0 && vid.videoHeight > 0) {
+        vid.readyState >= 3 && vid.videoWidth > 0 && vid.videoHeight > 0 && vid.currentTime > 0) {
       busy = true;
       try {
         framesSent++;
@@ -430,7 +433,7 @@ export async function init() {
     trackingStartTs = Date.now();
 
     // ── MediaPipe FaceMesh ───────────────────────────────────────────────────
-    reinitFaceMesh();
+    await reinitFaceMesh();
 
     clearInterval(progTimer);
     setLoadingState('SYSTEMS ONLINE — ACTIVATING…', 100);
@@ -439,7 +442,7 @@ export async function init() {
     if (typeof Camera === 'function') {
       camera = new Camera(vid, {
         onFrame: async () => {
-          if (vid.readyState < 2 || vid.videoWidth === 0 || vid.videoHeight === 0) {
+          if (vid.readyState < 3 || vid.videoWidth === 0 || vid.videoHeight === 0 || vid.currentTime === 0) {
             return;
           }
           try {
