@@ -140,6 +140,42 @@ function onResults(results) {
   );
 }
 
+// ── Neural Engine and FaceMesh initialization/recovery ────────────────────────
+function reinitFaceMesh() {
+  log('Initializing Neural Engine...', 'info');
+  try {
+    if (faceMesh && typeof faceMesh.close === 'function') {
+      faceMesh.close().catch(() => {});
+    }
+  } catch (e) {
+    console.warn('[DrowsyGuard] Failed to close old FaceMesh instance:', e);
+  }
+
+  faceMesh = new FaceMesh({ locateFile: MEDIAPIPE.LOCATE_FILE });
+  faceMesh.setOptions(MEDIAPIPE.OPTIONS);
+  faceMesh.onResults(onResults);
+}
+
+async function handleFaceMeshError(err) {
+  const errMsg = err?.message || String(err);
+  if (!sendErrShown) {
+    sendErrShown = true;
+    log('Face tracking frame error: ' + errMsg, 'alert');
+  }
+
+  // Self-healing: If the WebAssembly runtime aborted, automatically reboot it
+  if (errMsg.includes('abort') || errMsg.includes('Aborted')) {
+    log('WebAssembly runtime crashed — self-healing reboot triggered', 'alert');
+    try {
+      reinitFaceMesh();
+      log('Neural Engine rebooted successfully', 'ok');
+      sendErrShown = false; // Reset error state for the fresh instance
+    } catch (rebootErr) {
+      log('Neural Engine reboot failed: ' + rebootErr.message, 'alert');
+    }
+  }
+}
+
 // ── Fallback frame loop (if MediaPipe Camera util isn't available) ────────────
 function startFallbackTrackingLoop() {
   if (rafId) cancelAnimationFrame(rafId);
@@ -147,16 +183,14 @@ function startFallbackTrackingLoop() {
   let busy = false;
 
   const tick = async () => {
-    if (!busy && faceMesh && !vid.paused && !vid.ended) {
+    if (!busy && faceMesh && !vid.paused && !vid.ended &&
+        vid.readyState >= 2 && vid.videoWidth > 0 && vid.videoHeight > 0) {
       busy = true;
       try {
         framesSent++;
         await faceMesh.send({ image: vid });
       } catch (err) {
-        if (!sendErrShown) {
-          sendErrShown = true;
-          log('Face tracking frame error: ' + err.message, 'alert');
-        }
+        await handleFaceMeshError(err);
       } finally {
         busy = false;
       }
@@ -396,9 +430,7 @@ export async function init() {
     trackingStartTs = Date.now();
 
     // ── MediaPipe FaceMesh ───────────────────────────────────────────────────
-    faceMesh = new FaceMesh({ locateFile: MEDIAPIPE.LOCATE_FILE });
-    faceMesh.setOptions(MEDIAPIPE.OPTIONS);
-    faceMesh.onResults(onResults);
+    reinitFaceMesh();
 
     clearInterval(progTimer);
     setLoadingState('SYSTEMS ONLINE — ACTIVATING…', 100);
@@ -407,14 +439,14 @@ export async function init() {
     if (typeof Camera === 'function') {
       camera = new Camera(vid, {
         onFrame: async () => {
+          if (vid.readyState < 2 || vid.videoWidth === 0 || vid.videoHeight === 0) {
+            return;
+          }
           try {
             framesSent++;
             await faceMesh.send({ image: vid });
           } catch (err) {
-            if (!sendErrShown) {
-              sendErrShown = true;
-              log('Face tracking frame error: ' + err.message, 'alert');
-            }
+            await handleFaceMeshError(err);
           }
         },
         width:  MEDIAPIPE.CAMERA.width,
