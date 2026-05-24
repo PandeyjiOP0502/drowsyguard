@@ -5,8 +5,8 @@
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#050912",
-  "theme_color": "#050912",
+  "background_color": "#030711",
+  "theme_color": "#030711",
   "categories": ["health", "utilities", "safety"],
   "icons": [
     {

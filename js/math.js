@@ -36,18 +36,7 @@ export function mouthAspectRatio(landmarks) {
   return dist(T, B) / dist(L, R);
 }
 
-// ── Eye Aspect Ratio for blink detection (vertical open) ───────────────────
-export function eyeOpenness(landmarks) {
-  const leftTop = landmarks[LANDMARKS.LEFT_EYE_TOP];
-  const leftBottom = landmarks[LANDMARKS.LEFT_EYE_BOTTOM];
-  const rightTop = landmarks[LANDMARKS.RIGHT_EYE_TOP];
-  const rightBottom = landmarks[LANDMARKS.RIGHT_EYE_BOTTOM];
-  
-  const leftOpenness = dist(leftTop, leftBottom);
-  const rightOpenness = dist(rightTop, rightBottom);
-  
-  return (leftOpenness + rightOpenness) / 2;
-}
+
 
 // ── Head Pose Estimation ────────────────────────────────────────────────────
 export function calculateHeadPose(landmarks) {
@@ -77,7 +66,7 @@ export function calculateHeadPose(landmarks) {
     yaw: clamp(yaw, -60, 60),
     pitch: clamp(pitch, -45, 45),
     roll: clamp(roll, -30, 30),
-    isLookingAway: Math.abs(yaw) > HEAD_POSE.YAW_LEFT || Math.abs(pitch) > HEAD_POSE.PITCH_UP
+    isLookingAway: Math.abs(yaw) > HEAD_POSE.YAW_RIGHT || Math.abs(pitch) > Math.abs(HEAD_POSE.PITCH_UP)
   };
 }
 

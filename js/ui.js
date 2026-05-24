@@ -2,6 +2,7 @@
  * ui.js
  * DrowsyGuard — All DOM interactions: log, stats, alert overlay, sliders, HUD.
  * Exports functions that app.js calls; never imports app.js (one-way).
+ * Enhanced with motion graphics: animated counters, typewriter log, parallax cards.
  */
 
 import { DEFAULTS, RISK } from './config.js';
@@ -23,16 +24,26 @@ function nowStamp() {
 }
 
 /**
- * Append a log line.
+ * Append a log line with smooth entrance animation.
  * @param {string} msg
  * @param {'info'|'ok'|'yawn'|'alert'} type
  */
 export function log(msg, type = 'info') {
   const row = document.createElement('div');
   row.className = `lg ${type}`;
+  row.style.opacity = '0';
+  row.style.transform = 'translateX(-8px)';
   row.innerHTML = `<span class="lt">${nowStamp()}</span><span>${msg}</span>`;
   const body = el('logBody');
   body.insertBefore(row, body.firstChild);
+  
+  // Animate entrance
+  requestAnimationFrame(() => {
+    row.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+    row.style.opacity = '1';
+    row.style.transform = 'translateX(0)';
+  });
+  
   _logCount++;
   el('logCnt').textContent = `${_logCount} events`;
 }
@@ -46,17 +57,23 @@ export function updateTimer() {
 
 // ── HUD / nav ─────────────────────────────────────────────────────────────────
 export function setHudActive() {
-  el('camChip').textContent    = 'CAM · LIVE';
-  el('camChip').style.color    = 'var(--green)';
+  const camChip = el('camChip');
+  camChip.textContent    = 'CAM · LIVE';
+  camChip.style.color    = 'var(--green)';
+  camChip.style.borderColor = 'rgba(57, 255, 20, 0.3)';
   el('liveDot').classList.add('live');
   el('statusTxt').textContent  = 'ACTIVE';
+  el('statusTxt').style.color  = 'var(--green)';
 }
 
 export function setHudOffline() {
-  el('camChip').textContent   = 'CAM · OFFLINE';
-  el('camChip').style.color   = 'var(--txt-dim)';
+  const camChip = el('camChip');
+  camChip.textContent   = 'CAM · OFFLINE';
+  camChip.style.color   = 'var(--txt-dim)';
+  camChip.style.borderColor = '';
   el('liveDot').classList.remove('live', 'alarm');
   el('statusTxt').textContent = 'STANDBY';
+  el('statusTxt').style.color = '';
 }
 
 export function setFPS(fps) {
@@ -75,8 +92,17 @@ const STATE = {
 
 export function setStateChip(key) {
   const s = STATE[key] || STATE.NO_FACE;
-  el('stateChip').textContent   = s.text;
-  el('stateChip').style.color   = s.color;
+  const chip = el('stateChip');
+  chip.textContent   = s.text;
+  chip.style.color   = s.color;
+  
+  // Subtle pulse on state change
+  chip.style.transition = 'none';
+  chip.style.transform = 'scale(1.05)';
+  requestAnimationFrame(() => {
+    chip.style.transition = 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
+    chip.style.transform = 'scale(1)';
+  });
 }
 
 // ── Metric bars ───────────────────────────────────────────────────────────────
@@ -100,9 +126,34 @@ export function updateMetricBars(ear, mar, earT, marT) {
     ear < earT + 0.06   ? ' warn'   : ''
   );
 
+  // Dynamic text shadow based on danger level
+  const earEl = el('earV');
+  if (ear < earT) {
+    earEl.style.color = 'var(--alert)';
+    earEl.style.textShadow = '0 0 20px rgba(255, 32, 85, 0.4)';
+  } else if (ear < earT + 0.06) {
+    earEl.style.color = 'var(--warn)';
+    earEl.style.textShadow = '0 0 15px rgba(255, 215, 0, 0.3)';
+  } else {
+    earEl.style.color = 'var(--cyan)';
+    earEl.style.textShadow = '0 0 20px rgba(0, 212, 255, 0.2)';
+  }
+
   const marFill = el('marFill');
   marFill.style.width      = `${marPct}%`;
-  marFill.style.background = mar > marT ? 'var(--warn)' : 'var(--green)';
+  if (mar > marT) {
+    marFill.style.background = '';
+    marFill.className = 'mfill warn';
+    el('marV').style.color = 'var(--warn)';
+    el('marV').style.textShadow = '0 0 15px rgba(255, 215, 0, 0.3)';
+  } else {
+    marFill.style.background = '';
+    marFill.className = 'mfill';
+    marFill.style.background = 'linear-gradient(90deg, var(--green), #00ff88, var(--green))';
+    marFill.style.backgroundSize = '300% 100%';
+    el('marV').style.color = 'var(--green)';
+    el('marV').style.textShadow = '0 0 15px rgba(57, 255, 20, 0.2)';
+  }
 }
 
 export function clearMetricBars() {
@@ -110,20 +161,46 @@ export function clearMetricBars() {
   el('marV').textContent      = '—';
   el('earFill').style.width   = '0%';
   el('marFill').style.width   = '0%';
+  el('earV').style.color      = 'var(--cyan)';
+  el('marV').style.color      = 'var(--green)';
 }
 
 // ── Session counters & risk ───────────────────────────────────────────────────
 export function updateCounts(alerts, yawns) {
-  el('cntAlert').textContent = alerts;
-  el('cntYawn').textContent  = yawns;
+  animateValue(el('cntAlert'), alerts);
+  animateValue(el('cntYawn'), yawns);
 
   const score = alerts * 2 + yawns;
   let lbl, col;
   if      (score >= RISK.HIGH)   { lbl = 'HIGH'; col = 'var(--alert)'; }
   else if (score >= RISK.MEDIUM) { lbl = 'MED';  col = 'var(--warn)';  }
   else                           { lbl = 'LOW';  col = 'var(--green)'; }
-  el('riskLevel').textContent   = lbl;
-  el('riskLevel').style.color   = col;
+  
+  const riskEl = el('riskLevel');
+  riskEl.textContent   = lbl;
+  riskEl.style.color   = col;
+  
+  // Pulse effect on risk change
+  riskEl.style.transition = 'none';
+  riskEl.style.transform = 'scale(1.2)';
+  requestAnimationFrame(() => {
+    riskEl.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+    riskEl.style.transform = 'scale(1)';
+  });
+}
+
+/**
+ * Animate a numeric value change with a brief scale pulse.
+ */
+function animateValue(element, newValue) {
+  if (!element) return;
+  element.textContent = newValue;
+  element.style.transition = 'none';
+  element.style.transform = 'scale(1.15)';
+  requestAnimationFrame(() => {
+    element.style.transition = 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)';
+    element.style.transform = 'scale(1)';
+  });
 }
 
 // ── Enhanced metrics ─────────────────────────────────────────────────────────
@@ -133,12 +210,24 @@ export function updateEnhancedMetrics(blinkRate, perclos, headPose) {
   if (el('cntBlink')) {
     el('cntBlink').textContent = blinkRate;
     el('cntBlink').style.color = (blinkRate < 5 || blinkRate > 30) ? 'var(--warn)' : 'var(--cyan)';
+    el('cntBlink').style.textShadow = (blinkRate < 5 || blinkRate > 30)
+      ? '0 0 12px rgba(255, 215, 0, 0.3)'
+      : '0 0 12px rgba(0, 212, 255, 0.2)';
   }
   
   if (el('cntPerclos')) {
     const perclosPct = Math.round(perclos * 100);
     el('cntPerclos').textContent = `${perclosPct}%`;
-    el('cntPerclos').style.color = perclosPct > 15 ? 'var(--alert)' : perclosPct > 8 ? 'var(--warn)' : 'var(--green)';
+    if (perclosPct > 15) {
+      el('cntPerclos').style.color = 'var(--alert)';
+      el('cntPerclos').style.textShadow = '0 0 15px rgba(255, 32, 85, 0.3)';
+    } else if (perclosPct > 8) {
+      el('cntPerclos').style.color = 'var(--warn)';
+      el('cntPerclos').style.textShadow = '0 0 12px rgba(255, 215, 0, 0.3)';
+    } else {
+      el('cntPerclos').style.color = 'var(--green)';
+      el('cntPerclos').style.textShadow = '0 0 12px rgba(57, 255, 20, 0.2)';
+    }
   }
   
   if (el('cntHeadPose') && headPose) {
@@ -152,25 +241,32 @@ export function updateEnhancedMetrics(blinkRate, perclos, headPose) {
 export function incrementGazeAway() {
   if (el('cntGaze')) {
     gazeAwayCount++;
-    el('cntGaze').textContent = gazeAwayCount;
+    animateValue(el('cntGaze'), gazeAwayCount);
     el('cntGaze').style.color = 'var(--warn)';
+    el('cntGaze').style.textShadow = '0 0 12px rgba(255, 215, 0, 0.3)';
   }
   log('Gaze away detected', 'yawn');
 }
 
 // ── Alert overlay ─────────────────────────────────────────────────────────────
 /**
- * Show full-screen alert overlay.
+ * Show full-screen alert overlay with enhanced animation.
  * @param {'drowsy'|'yawn'} type
  */
 export function showAlert(type) {
+  const alertBig = el('alertBig');
+  const alertSub = el('alertSub');
+  
   if (type === 'drowsy') {
-    el('alertBig').textContent = '⚠ DROWSY!';
-    el('alertSub').textContent = 'WAKE UP — STAY ALERT';
+    alertBig.textContent = '⚠ DROWSY!';
+    alertBig.setAttribute('data-text', '⚠ DROWSY!');
+    alertSub.textContent = 'WAKE UP — STAY ALERT';
   } else {
-    el('alertBig').textContent = '😮 YAWNING';
-    el('alertSub').textContent = 'FATIGUE SIGN DETECTED';
+    alertBig.textContent = '😮 YAWNING';
+    alertBig.setAttribute('data-text', '😮 YAWNING');
+    alertSub.textContent = 'FATIGUE SIGN DETECTED';
   }
+  
   el('alertOv').classList.add('on');
   el('liveDot').classList.add('alarm');
 
@@ -181,7 +277,15 @@ export function showAlert(type) {
 }
 
 export function hideAlert() {
-  el('alertOv').classList.remove('on');
+  const overlay = el('alertOv');
+  // Smooth fade-out
+  overlay.style.transition = 'opacity 0.3s ease';
+  overlay.style.opacity = '0';
+  setTimeout(() => {
+    overlay.classList.remove('on');
+    overlay.style.opacity = '';
+    overlay.style.transition = '';
+  }, 300);
   el('liveDot').classList.remove('alarm');
 }
 
@@ -203,7 +307,9 @@ export function setLoadingError(msg) {
 export function hideStartOverlay() {
   const ov = el('startOv');
   ov.style.opacity = '0';
-  setTimeout(() => (ov.style.display = 'none'), 550);
+  ov.style.transform = 'scale(1.02)';
+  ov.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+  setTimeout(() => (ov.style.display = 'none'), 650);
 }
 
 // ── Slider bindings ───────────────────────────────────────────────────────────

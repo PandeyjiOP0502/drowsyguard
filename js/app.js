@@ -2,12 +2,14 @@
  * app.js
  * DrowsyGuard — Application entry point & orchestrator.
  * Initialises camera, MediaPipe FaceMesh, detector, and wires all modules.
+ * Enhanced with particle system and boot sequence animation.
  */
 
 import { MEDIAPIPE, CAM_CONSTRAINTS } from './config.js';
 import { DrowsinessDetector }          from './detector.js';
 import { renderOverlay, clearOverlay } from './draw.js';
 import { playAlarm, ensureAudioCtx }   from './audio.js';
+import { initParticleSystem }          from './particles.js';
 import {
   log, setSessionStart, updateTimer, setFPS,
   setHudActive, setHudOffline,
@@ -37,6 +39,9 @@ let fallbackLoopActive = false;
 let lastResultsTs = 0;
 let framesSent = 0;
 let trackingStartTs = 0;
+
+// ── Initialize particle system on page load ───────────────────────────────────
+initParticleSystem();
 
 // ── Detector ─────────────────────────────────────────────────────────────────
 const detector = new DrowsinessDetector(
@@ -302,12 +307,29 @@ function waitForVideoReady(videoEl) {
   });
 }
 
-// ── Progress bar loader helper ────────────────────────────────────────────────
+// ── Boot sequence messages ────────────────────────────────────────────────────
+const BOOT_MESSAGES = [
+  'INITIALIZING NEURAL ENGINE…',
+  'LOADING FACE MESH MODEL…',
+  'CALIBRATING EAR/MAR METRICS…',
+  'CONFIGURING DETECTION PIPELINE…',
+  'STARTING VISION SYSTEM…',
+];
+
+// ── Progress bar loader helper with boot sequence ─────────────────────────────
 function startProgressAnim() {
   let prog = 0;
+  let msgIdx = 0;
   return setInterval(() => {
-    prog = Math.min(prog + 1.8, 88);
-    setLoadingState('INITIALIZING MODELS…', prog);
+    prog = Math.min(prog + 1.6, 88);
+    
+    // Cycle through boot messages
+    const newIdx = Math.min(Math.floor(prog / 18), BOOT_MESSAGES.length - 1);
+    if (newIdx !== msgIdx) {
+      msgIdx = newIdx;
+    }
+    
+    setLoadingState(BOOT_MESSAGES[msgIdx], prog);
   }, 40);
 }
 
@@ -370,7 +392,7 @@ export async function init() {
     faceMesh.onResults(onResults);
 
     clearInterval(progTimer);
-    setLoadingState('MODELS LOADED — STARTING…', 100);
+    setLoadingState('SYSTEMS ONLINE — ACTIVATING…', 100);
 
     // ── MediaPipe Camera util ────────────────────────────────────────────────
     if (typeof Camera === 'function') {

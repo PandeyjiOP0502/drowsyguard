@@ -4,11 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="description" content="Real-time AI-powered drowsiness detection using facial landmark analysis. Detects eye closure, yawning, head pose, and gaze patterns to prevent fatigue-related incidents.">
-  <meta name="theme-color" content="#050912">
+  <meta name="theme-color" content="#030711">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="DrowsyGuard">
   
+  <!-- Open Graph / Social -->
+  <meta property="og:title" content="DrowsyGuard · AI Drowsiness Detection">
+  <meta property="og:description" content="Real-time AI-powered drowsiness detection using facial landmark analysis. Stay alert. Stay safe.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://drowsyguard.vercel.app/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="DrowsyGuard · AI Drowsiness Detection">
+
   <title>DrowsyGuard · AI Drowsiness Detection</title>
 
   <!-- Performance: Preconnect to external resources -->
@@ -22,12 +30,12 @@
 
   <!-- PWA Manifest -->
   <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23050912' stroke='%2300d4ff' stroke-width='4'/><circle cx='50' cy='50' r='20' fill='none' stroke='%2300d4ff' stroke-width='3'/></svg>">
-  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><circle cx='90' cy='90' r='80' fill='%23050912' stroke='%2300d4ff' stroke-width='8'/><circle cx='90' cy='90' r='35' fill='none' stroke='%2300d4ff' stroke-width='6'/><circle cx='90' cy='90' r='15' fill='%2300d4ff'/></svg>">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23030711' stroke='%2300d4ff' stroke-width='4'/><circle cx='50' cy='50' r='20' fill='none' stroke='%2300d4ff' stroke-width='3'/></svg>">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><circle cx='90' cy='90' r='80' fill='%23030711' stroke='%2300d4ff' stroke-width='8'/><circle cx='90' cy='90' r='35' fill='none' stroke='%2300d4ff' stroke-width='6'/><circle cx='90' cy='90' r='15' fill='%2300d4ff'/></svg>">
 
   <!-- Critical CSS inline for faster FCP -->
   <style>
-    :root{--bg:#050912;--bg2:#080f1e;--cyan:#00d4ff;--green:#39ff14}
+    :root{--bg:#030711;--bg2:#080f1e;--cyan:#00d4ff;--green:#39ff14}
     body{background:var(--bg);color:#c8ddff;font-family:'Rajdhani',sans-serif;margin:0;min-height:100vh}
     .skip-link{position:absolute;top:-100px;left:50%;transform:translateX(-50%);background:var(--cyan);color:var(--bg);padding:10px 20px;border-radius:0 0 8px 8px;font-weight:700;text-transform:uppercase;z-index:9999;transition:top .3s}
     .skip-link:focus{top:0}
@@ -37,11 +45,14 @@
   <link rel="stylesheet" href="styles.css" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="styles.css"></noscript>
 
-  <!-- MediaPipe - defer for faster initial load -->
-  <script src="./vendor/mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous" defer></script>
-  <script src="./vendor/mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous" defer></script>
+<!-- MediaPipe - must load BEFORE app.js module -->
+  <script src="./vendor/mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="./vendor/mediapipe/face_mesh/face_mesh.js"       crossorigin="anonymous"></script>
 </head>
 <body>
+
+<!-- Particle background canvas -->
+<canvas id="particleCanvas" aria-hidden="true"></canvas>
 
 <!-- Skip link for accessibility -->
 <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -57,7 +68,7 @@
     </div>
     <div>
       <div><em>Drowsy</em>Guard</div>
-      <div class="logo-version">v1.0 · VISION AI</div>
+      <div class="logo-version">v2.0.0 · VISION AI</div>
     </div>
   </div>
 
@@ -232,12 +243,21 @@
 
 </div><!-- /wrap -->
 
+<!-- ── Footer ──────────────────────────────────────────────────────── -->
+<footer class="site-footer">
+  <span class="footer-brand">DrowsyGuard</span>
+  <span class="footer-dot"></span>
+  <span>AI-Powered Drowsiness Detection</span>
+  <span class="footer-dot"></span>
+  <span>MediaPipe FaceMesh · EAR · MAR · PERCLOS</span>
+</footer>
+
 <!-- ── Drowsy alert overlay ──────────────────────────────────────────── -->
 <div id="alertOv">
   <div class="alert-inner">
-    <div class="alert-big" id="alertBig">⚠ DROWSY!</div>
+    <div class="alert-big" id="alertBig" data-text="⚠ DROWSY!">⚠ DROWSY!</div>
     <div class="alert-sub" id="alertSub">WAKE UP — STAY ALERT</div>
-    <button class="btn-dismiss" id="btnDismiss">◼ DISMISS</button>
+    <button class="btn-dismiss" id="btnDismiss"><span>◼ DISMISS</span></button>
   </div>
 </div>
 

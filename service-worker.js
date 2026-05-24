@@ -5,7 +5,7 @@
  * Caches MediaPipe and app assets for offline use.
  */
 
-const CACHE_NAME = 'drowsyguard-v5';
+const CACHE_NAME = 'drowsyguard-v6';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -19,6 +19,7 @@ const ASSETS_TO_CACHE = [
   '/js/draw.js',
   '/js/math.js',
   '/js/ui.js',
+  '/js/particles.js',
   // MediaPipe from vendor directory (vendored local assets)
   '/vendor/mediapipe/face_mesh/face_mesh.js',
   '/vendor/mediapipe/camera_utils/camera_utils.js',

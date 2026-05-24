@@ -160,8 +160,9 @@ export class DrowsinessDetector {
 
     // PERCLOS-based drowsiness
     const perclos = this.perclos;
-    if (perclos > DEFAULTS.PERCLOS_THRESH && !this._cooldown) {
-      // Additional drowsiness indicator
+    if (perclos > DEFAULTS.PERCLOS_THRESH && !this._cooldown && !this._alerted) {
+      this._alerted = true;
+      this._onDrowsy();
     }
 
     // Compute current state
