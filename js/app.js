@@ -183,23 +183,32 @@ function startFrameWatchdog() {
 
     const now = Date.now();
     const sinceStart = now - trackingStartTs;
-    const staleFor = lastResultsTs ? now - lastResultsTs : Infinity;
+    const staleFor = lastResultsTs > 0 ? now - lastResultsTs : 0;
 
-    const noResultsYet = framesSent === 0 && sinceStart > 3000;
-    const stalled = framesSent > 0 && staleFor > 2500;
+    // Generous initial window (15 seconds) for FaceMesh WASM models to download and compile.
+    const noResultsYet = lastResultsTs === 0 && sinceStart > 15000;
+    // Post-startup stall: if we had results before but haven't got any new ones in 5 seconds.
+    const stalled = lastResultsTs > 0 && staleFor > 5000;
 
     if (!noResultsYet && !stalled) return;
 
-    log('Frame pipeline stalled — switching to fallback loop', 'alert');
+    log('Frame pipeline stalled — restarting camera in fallback mode', 'alert');
+    stopFrameWatchdog();
 
     if (camera && typeof camera.stop === 'function') {
       camera.stop().catch(() => {});
       camera = null;
     }
 
-    vid.play().catch(() => {});
-    startFallbackTrackingLoop();
-  }, 1200);
+    // Re-request direct video stream and start the manual requestAnimationFrame loop
+    startDirectStream()
+      .then(() => {
+        startFallbackTrackingLoop();
+      })
+      .catch((err) => {
+        log('Fallback camera recovery failed: ' + err.message, 'alert');
+      });
+  }, 1500);
 }
 
 function stopVideoStream() {
